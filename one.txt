@@ -1,8 +1,2 @@
 one
-<<<<<<< Updated upstream
 1
-=======
-Hello
-
-another feature
->>>>>>> Stashed changes
