@@ -1,0 +1,14 @@
+name: proj1-java-ui
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: proj1-java-ui:latest
+    container_name: proj1-java-ui
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: "8080"
+    restart: unless-stopped

@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Java OOP Demo UI</title>
+    <style>
+      :root {
+        --bg-deep: #0c1f1a;
+        --bg-mid: #113227;
+        --panel: #f4efe2;
+        --ink: #1d2a2c;
+        --muted: #536061;
+        --accent: #c45f2d;
+        --accent-2: #2a8f79;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Trebuchet MS", "Lucida Sans", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 15% 10%, #1d5f4c 0%, transparent 38%),
+          radial-gradient(circle at 85% 0%, #8d3c1f 0%, transparent 34%),
+          linear-gradient(140deg, var(--bg-deep), var(--bg-mid));
+      }
+
+      .shell {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 28px 18px 40px;
+      }
+
+      .title {
+        font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+        margin: 0;
+        letter-spacing: 0.4px;
+        color: #f7f2e6;
+        font-size: clamp(1.9rem, 3.4vw, 2.8rem);
+      }
+
+      .subtitle {
+        margin-top: 8px;
+        color: #d7d2c2;
+      }
+
+      .toolbar {
+        margin-top: 18px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        border: none;
+        border-radius: 999px;
+        background: linear-gradient(120deg, var(--accent), #de8944);
+        color: #fff;
+        font-weight: 700;
+        padding: 9px 16px;
+        cursor: pointer;
+      }
+
+      .btn:hover {
+        filter: brightness(1.05);
+      }
+
+      .meta {
+        color: #e8dfca;
+        font-size: 0.9rem;
+      }
+
+      .grid {
+        margin-top: 20px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .card {
+        background: var(--panel);
+        border-radius: 16px;
+        padding: 14px 16px;
+        box-shadow: 0 14px 36px rgba(0, 0, 0, 0.24);
+        opacity: 0;
+        transform: translateY(8px);
+        animation: reveal 420ms ease forwards;
+      }
+
+      .card:nth-child(2) {
+        animation-delay: 90ms;
+      }
+
+      .card h2 {
+        margin: 0 0 10px;
+        font-size: 1.1rem;
+      }
+
+      .kv {
+        margin: 6px 0;
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+
+      .list {
+        margin: 8px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .list li {
+        margin: 8px 0;
+        padding: 8px 10px;
+        border-radius: 10px;
+        background: #efe8d6;
+        border-left: 5px solid var(--accent-2);
+      }
+
+      .error {
+        margin-top: 14px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: #ffd6d6;
+        color: #8c2222;
+        display: none;
+      }
+
+      @keyframes reveal {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 720px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <h1 class="title">Java OOP Demo Results</h1>
+      <p class="subtitle">This UI reads live data from <code>/api/results</code>.</p>
+
+      <section class="toolbar">
+        <button class="btn" id="refreshBtn" type="button">Refresh Results</button>
+        <span class="meta" id="stamp">Last update: -</span>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <h2>User + Books</h2>
+          <div id="userBlock" class="muted">Loading...</div>
+          <ul id="booksList" class="list"></ul>
+        </article>
+
+        <article class="card">
+          <h2>Shapes + Areas</h2>
+          <ul id="shapesList" class="list"></ul>
+        </article>
+      </section>
+
+      <div id="errorBox" class="error"></div>
+    </main>
+
+    <script>
+      const refreshBtn = document.getElementById("refreshBtn");
+      const userBlock = document.getElementById("userBlock");
+      const booksList = document.getElementById("booksList");
+      const shapesList = document.getElementById("shapesList");
+      const stamp = document.getElementById("stamp");
+      const errorBox = document.getElementById("errorBox");
+
+      async function loadResults() {
+        errorBox.style.display = "none";
+        try {
+          const response = await fetch("/api/results", { cache: "no-store" });
+          if (!response.ok) {
+            throw new Error("HTTP " + response.status);
+          }
+          const data = await response.json();
+          render(data);
+          stamp.textContent = "Last update: " + new Date().toLocaleTimeString();
+        } catch (err) {
+          errorBox.textContent = "Failed to load data: " + err.message;
+          errorBox.style.display = "block";
+        }
+      }
+
+      function render(data) {
+        const user = data.user || {};
+        userBlock.innerHTML =
+          "<div class='kv'><strong>Name:</strong> " + escapeHtml(user.name || "-") + "</div>" +
+          "<div class='kv'><strong>Age:</strong> " + String(user.age ?? "-") + "</div>" +
+          "<div class='kv'><strong>Borrowed count:</strong> " + String(user.borrowedCount ?? 0) + "</div>";
+
+        booksList.innerHTML = "";
+        (user.books || []).forEach((book) => {
+          const li = document.createElement("li");
+          li.textContent = (book.title || "Unknown title") + " by " + (book.author || "Unknown");
+          booksList.appendChild(li);
+        });
+
+        shapesList.innerHTML = "";
+        (data.shapes || []).forEach((shape) => {
+          const li = document.createElement("li");
+          li.innerHTML =
+            "<strong>" + escapeHtml(shape.name || "Shape") + "</strong>" +
+            "<div class='muted'>Area: " + String(shape.area ?? "-") + "</div>";
+          shapesList.appendChild(li);
+        });
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      refreshBtn.addEventListener("click", loadResults);
+      loadResults();
+    </script>
+  </body>
+</html>
